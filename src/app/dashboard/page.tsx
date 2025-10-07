@@ -47,7 +47,7 @@ export default async function DashboardPage() {
             <form action={handleSignOut}>
               <button
                 type="submit"
-                className="px-4 py-2 text-gray-600 hover:text-gray-900"
+                className="px-4 py-2 text-gray-600 hover:text-gray-900 cursor-pointer"
               >
                 로그아웃
               </button>
