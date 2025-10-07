@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.65.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.74.0",
+    "form-data": "^4.0.4",
     "next": "15.5.4",
     "pdf-parse": "^2.2.0",
     "react": "19.1.0",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/form-data": "^2.2.1",
     "@types/node": "^20",
     "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",

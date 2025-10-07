@@ -1,4 +1,5 @@
 import { pdf as pdfParse } from 'pdf-parse'
+import FormData from 'form-data'
 
 // Naver CLOVA OCR API를 사용한 이미지 텍스트 추출
 export async function extractTextFromImage(buffer: Buffer): Promise<string> {
@@ -25,17 +26,18 @@ export async function extractTextFromImage(buffer: Buffer): Promise<string> {
 
     const formData = new FormData()
     formData.append('message', JSON.stringify(requestJson))
-
-    // Buffer를 Blob으로 변환
-    const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer
-    const blob = new Blob([arrayBuffer], { type: 'image/jpeg' })
-    formData.append('file', blob, 'contract_image.jpg')
+    formData.append('file', buffer, {
+      filename: 'contract_image.jpg',
+      contentType: 'image/jpeg',
+    })
 
     const response = await fetch(apiURL, {
       method: 'POST',
       headers: {
         'X-OCR-SECRET': secretKey,
+        ...formData.getHeaders(),
       },
+      // @ts-expect-error - FormData compatibility
       body: formData,
     })
 
