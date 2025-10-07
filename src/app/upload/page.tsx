@@ -95,9 +95,9 @@ export default function UploadPage() {
 
       // 5. Redirect to analysis page
       router.push(`/contracts/${contractData.id}`)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Upload error:', error)
-      setError(error.message || '업로드 중 오류가 발생했습니다')
+      setError(error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다')
     } finally {
       setUploading(false)
     }

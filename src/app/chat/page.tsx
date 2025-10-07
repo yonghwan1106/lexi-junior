@@ -58,6 +58,7 @@ export default function ChatPage() {
     }
 
     createSession()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSend = async () => {

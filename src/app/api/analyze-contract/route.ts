@@ -101,10 +101,10 @@ export async function POST(request: Request) {
       contractId,
       riskLevel: analysisResult.overallRisk,
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Analysis error:', error)
     return NextResponse.json(
-      { error: error.message || 'Analysis failed' },
+      { error: error instanceof Error ? error.message : 'Analysis failed' },
       { status: 500 }
     )
   }

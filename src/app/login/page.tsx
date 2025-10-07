@@ -34,8 +34,8 @@ export default function LoginPage() {
         if (error) throw error
         router.push('/dashboard')
       }
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '로그인에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -51,8 +51,8 @@ export default function LoginPage() {
         },
       })
       if (error) throw error
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '로그인에 실패했습니다')
       setLoading(false)
     }
   }
@@ -67,8 +67,8 @@ export default function LoginPage() {
         },
       })
       if (error) throw error
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '로그인에 실패했습니다')
       setLoading(false)
     }
   }

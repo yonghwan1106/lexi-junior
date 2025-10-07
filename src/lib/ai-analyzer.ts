@@ -107,7 +107,7 @@ ${text}
   try {
     const result = JSON.parse(jsonText)
     return result as AnalysisResult
-  } catch (error) {
+  } catch {
     console.error('Failed to parse Claude response:', jsonText)
     throw new Error('AI 분석 결과 파싱에 실패했습니다')
   }

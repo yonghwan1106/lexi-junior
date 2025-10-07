@@ -1,5 +1,5 @@
 import { createWorker } from 'tesseract.js'
-import pdfParse from 'pdf-parse'
+import { pdf as pdfParse } from 'pdf-parse'
 
 export async function extractTextFromImage(buffer: Buffer): Promise<string> {
   const worker = await createWorker('kor+eng')

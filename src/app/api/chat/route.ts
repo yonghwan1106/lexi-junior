@@ -105,10 +105,10 @@ export async function POST(request: Request) {
       content: cleanedResponse,
       sources: sources.length > 0 ? sources : undefined,
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Chat error:', error)
     return NextResponse.json(
-      { error: error.message || 'Chat failed' },
+      { error: error instanceof Error ? error.message : 'Chat failed' },
       { status: 500 }
     )
   }
