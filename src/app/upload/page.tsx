@@ -11,25 +11,58 @@ export default function UploadPage() {
   const [title, setTitle] = useState<string>('')
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  const validateFile = (selectedFile: File) => {
+    // 파일 크기 검증 (10MB 제한)
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setError('파일 크기는 10MB를 초과할 수 없습니다')
+      return false
+    }
+    // 파일 형식 검증
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+    if (!allowedTypes.includes(selectedFile.type)) {
+      setError('JPG, PNG, PDF 파일만 업로드 가능합니다')
+      return false
+    }
+    return true
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0]
-      // 파일 크기 검증 (10MB 제한)
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        setError('파일 크기는 10MB를 초과할 수 없습니다')
-        return
+      if (validateFile(selectedFile)) {
+        setFile(selectedFile)
+        setError(null)
       }
-      // 파일 형식 검증
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
-      if (!allowedTypes.includes(selectedFile.type)) {
-        setError('JPG, PNG, PDF 파일만 업로드 가능합니다')
-        return
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const selectedFile = e.dataTransfer.files[0]
+      if (validateFile(selectedFile)) {
+        setFile(selectedFile)
+        setError(null)
       }
-      setFile(selectedFile)
-      setError(null)
     }
   }
 
@@ -135,7 +168,16 @@ export default function UploadPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 계약서 파일
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition">
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition ${
+                  isDragging
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-300 hover:border-blue-500'
+                }`}
+              >
                 <input
                   type="file"
                   onChange={handleFileChange}
@@ -143,7 +185,7 @@ export default function UploadPage() {
                   className="hidden"
                   id="file-upload"
                 />
-                <label htmlFor="file-upload" className="cursor-pointer">
+                <label htmlFor="file-upload" className="cursor-pointer block">
                   <div className="text-4xl mb-4">📄</div>
                   {file ? (
                     <p className="text-blue-600 font-medium">{file.name}</p>
