@@ -1,33 +1,103 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { AnalysisResult } from '@/types/database.types'
 
-export default async function ContractDetailPage({
+export default function ContractDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: { id: string }
 }) {
-  const { id } = await params
-  const supabase = await createClient()
+  const [contract, setContract] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [retrying, setRetrying] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  useEffect(() => {
+    loadContract()
 
-  if (!user) {
-    redirect('/login')
+    // Auto-refresh every 3 seconds if analysis is pending
+    const interval = setInterval(() => {
+      if (contract && !contract.analysis_result) {
+        loadContract()
+      }
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [params.id])
+
+  const loadContract = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    const { data } = await supabase
+      .from('contracts')
+      .select('*')
+      .eq('id', params.id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (!data) {
+      router.push('/dashboard')
+      return
+    }
+
+    setContract(data)
+    setLoading(false)
   }
 
-  const { data: contract } = await supabase
-    .from('contracts')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single()
+  const retryAnalysis = async () => {
+    if (!contract) return
+
+    setRetrying(true)
+    try {
+      const response = await fetch('/api/analyze-contract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractId: contract.id,
+          filePath: contract.original_file_path,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        alert('분석 재시도 실패: ' + (error.error || '알 수 없는 오류'))
+        return
+      }
+
+      // Reload contract data
+      await loadContract()
+    } catch (error) {
+      console.error('Retry error:', error)
+      alert('분석 재시도 중 오류가 발생했습니다')
+    } finally {
+      setRetrying(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-xl text-gray-600">로딩 중...</div>
+      </div>
+    )
+  }
 
   if (!contract) {
-    redirect('/dashboard')
+    return null
   }
 
   const analysis = contract.analysis_result as AnalysisResult | null
@@ -83,9 +153,16 @@ export default async function ContractDetailPage({
             <h2 className="text-xl font-bold text-gray-900 mb-2">
               AI가 계약서를 분석하고 있습니다...
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-6">
               잠시만 기다려주세요. 분석이 완료되면 자동으로 새로고침됩니다.
             </p>
+            <button
+              onClick={retryAnalysis}
+              disabled={retrying}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {retrying ? '재시도 중...' : '분석 다시 시도하기'}
+            </button>
           </div>
         ) : (
           <>
