@@ -76,9 +76,8 @@ export default function UploadPage() {
 
       if (contractError) throw contractError
 
-      // 4. Trigger OCR and Analysis (Edge Function will be called via webhook or direct call)
-      // For now, we'll trigger it via a separate API route
-      const response = await fetch('/api/analyze-contract', {
+      // 4. Trigger OCR and Analysis in background (don't wait for response)
+      fetch('/api/analyze-contract', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,13 +86,11 @@ export default function UploadPage() {
           contractId: contractData.id,
           filePath: uploadData.path,
         }),
+      }).catch((error) => {
+        console.error('Background analysis trigger failed:', error)
       })
 
-      if (!response.ok) {
-        console.error('Analysis trigger failed')
-      }
-
-      // 5. Redirect to analysis page
+      // 5. Redirect to analysis page immediately
       router.push(`/contracts/${contractData.id}`)
     } catch (error) {
       console.error('Upload error:', error)

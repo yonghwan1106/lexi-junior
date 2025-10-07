@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server'
 import { extractText } from '@/lib/ocr'
 import { analyzeContract } from '@/lib/ai-analyzer'
 
+// Set max duration for this API route to 60 seconds (Vercel Pro allows up to 300s)
+export const maxDuration = 60
+
 export async function GET() {
   return NextResponse.json(
     { error: 'Method not allowed. Use POST request.' },
