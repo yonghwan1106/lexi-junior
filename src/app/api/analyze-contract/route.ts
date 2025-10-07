@@ -3,6 +3,13 @@ import { NextResponse } from 'next/server'
 import { extractText } from '@/lib/ocr'
 import { analyzeContract } from '@/lib/ai-analyzer'
 
+export async function GET() {
+  return NextResponse.json(
+    { error: 'Method not allowed. Use POST request.' },
+    { status: 405 }
+  )
+}
+
 export async function POST(request: Request) {
   try {
     const { contractId, filePath } = await request.json()
