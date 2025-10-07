@@ -6,29 +6,25 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { AnalysisResult } from '@/types/database.types'
 
+interface Contract {
+  id: string
+  title: string
+  contract_type: string
+  risk_level: string | null
+  original_file_path: string
+  analysis_result: AnalysisResult | null
+}
+
 export default function ContractDetailPage({
   params,
 }: {
   params: { id: string }
 }) {
-  const [contract, setContract] = useState<any>(null)
+  const [contract, setContract] = useState<Contract | null>(null)
   const [loading, setLoading] = useState(true)
   const [retrying, setRetrying] = useState(false)
   const router = useRouter()
   const supabase = createClient()
-
-  useEffect(() => {
-    loadContract()
-
-    // Auto-refresh every 3 seconds if analysis is pending
-    const interval = setInterval(() => {
-      if (contract && !contract.analysis_result) {
-        loadContract()
-      }
-    }, 3000)
-
-    return () => clearInterval(interval)
-  }, [params.id])
 
   const loadContract = async () => {
     const {
@@ -55,6 +51,20 @@ export default function ContractDetailPage({
     setContract(data)
     setLoading(false)
   }
+
+  useEffect(() => {
+    loadContract()
+
+    // Auto-refresh every 3 seconds if analysis is pending
+    const interval = setInterval(() => {
+      if (contract && !contract.analysis_result) {
+        loadContract()
+      }
+    }, 3000)
+
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id])
 
   const retryAnalysis = async () => {
     if (!contract) return
