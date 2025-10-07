@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir)",
+      "Read(//c/Users/user/.config/**)",
+      "Bash(cat:*)",
+      "Read(//c/Users/user/**)",
+      "Bash(claude mcp list:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npx:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
