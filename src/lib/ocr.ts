@@ -1,14 +1,69 @@
-import { createWorker } from 'tesseract.js'
 import { pdf as pdfParse } from 'pdf-parse'
 
+// Naver CLOVA OCR API를 사용한 이미지 텍스트 추출
 export async function extractTextFromImage(buffer: Buffer): Promise<string> {
-  const worker = await createWorker('kor+eng')
+  const apiURL = process.env.NAVER_CLOVA_OCR_API_URL
+  const secretKey = process.env.NAVER_CLOVA_OCR_SECRET_KEY
+
+  if (!apiURL || !secretKey) {
+    throw new Error('네이버 CLOVA OCR API 설정이 필요합니다')
+  }
 
   try {
-    const { data: { text } } = await worker.recognize(buffer)
-    return text
-  } finally {
-    await worker.terminate()
+    // Naver OCR API 요청 형식
+    const requestJson = {
+      images: [
+        {
+          format: 'jpg', // jpg, png 등
+          name: 'contract_image',
+        },
+      ],
+      requestId: `contract_ocr_${Date.now()}`,
+      version: 'V2',
+      timestamp: Date.now(),
+    }
+
+    const formData = new FormData()
+    formData.append('message', JSON.stringify(requestJson))
+
+    // Buffer를 Blob으로 변환
+    const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer
+    const blob = new Blob([arrayBuffer], { type: 'image/jpeg' })
+    formData.append('file', blob, 'contract_image.jpg')
+
+    const response = await fetch(apiURL, {
+      method: 'POST',
+      headers: {
+        'X-OCR-SECRET': secretKey,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Naver OCR API error:', errorText)
+      throw new Error(`OCR API 호출 실패: ${response.status}`)
+    }
+
+    const result = await response.json()
+
+    // Naver OCR 결과에서 텍스트 추출
+    if (!result.images || !result.images[0] || !result.images[0].fields) {
+      throw new Error('OCR 결과에서 텍스트를 찾을 수 없습니다')
+    }
+
+    // 모든 필드의 텍스트를 결합
+    interface OCRField {
+      inferText: string
+    }
+    const extractedText = result.images[0].fields
+      .map((field: OCRField) => field.inferText)
+      .join('\n')
+
+    return extractedText
+  } catch (error) {
+    console.error('Naver OCR error:', error)
+    throw new Error('이미지 텍스트 추출에 실패했습니다')
   }
 }
 
