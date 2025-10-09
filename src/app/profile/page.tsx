@@ -8,7 +8,7 @@ import Link from 'next/link'
 interface Profile {
   id: string
   email: string
-  full_name: string | null
+  nickname: string | null
   avatar_url: string | null
   created_at: string
 }
@@ -16,13 +16,13 @@ interface Profile {
 interface Subscription {
   plan_type: 'free' | 'plus' | 'pro'
   status: 'active' | 'cancelled' | 'expired'
-  current_period_end: string | null
+  expires_at: string | null
 }
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [fullName, setFullName] = useState('')
+  const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -64,13 +64,13 @@ export default function ProfilePage() {
 
       if (profileData) {
         setProfile(profileData)
-        setFullName(profileData.full_name || '')
+        setNickname(profileData.nickname || '')
       } else {
         // Create profile if not exists
         const newProfile = {
           id: user.id,
           email: user.email!,
-          full_name: null,
+          nickname: null,
           avatar_url: null,
         }
 
@@ -122,7 +122,7 @@ export default function ProfilePage() {
 
       const { error } = await supabase
         .from('profiles')
-        .update({ full_name: fullName })
+        .update({ nickname: nickname })
         .eq('id', user.id)
 
       if (error) throw error
@@ -254,13 +254,13 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  이름
+                  닉네임
                 </label>
                 <input
                   type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="이름을 입력하세요"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="닉네임을 입력하세요"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -312,11 +312,11 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {subscription?.current_period_end && (
+              {subscription?.expires_at && (
                 <div className="text-sm text-gray-600">
                   <p>
                     다음 결제일:{' '}
-                    {new Date(subscription.current_period_end).toLocaleDateString(
+                    {new Date(subscription.expires_at).toLocaleDateString(
                       'ko-KR'
                     )}
                   </p>

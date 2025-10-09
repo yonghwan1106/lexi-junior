@@ -1,35 +1,14 @@
--- Enable pgvector extension
-CREATE EXTENSION IF NOT EXISTS vector;
+-- Enable pgvector extension (already exists in schema)
+-- CREATE EXTENSION IF NOT EXISTS vector;
 
--- Create legal_documents table for RAG
-CREATE TABLE IF NOT EXISTS legal_documents (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  source_url TEXT,
-  document_type TEXT, -- 'law', 'regulation', 'guideline', 'case', etc.
-  category TEXT, -- 'labor', 'lease', 'freelance', 'consumer', etc.
-  embedding vector(1536), -- OpenAI ada-002 or Claude embeddings
-  metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create index for vector similarity search
-CREATE INDEX IF NOT EXISTS legal_documents_embedding_idx
-ON legal_documents USING ivfflat (embedding vector_cosine_ops)
+-- legal_knowledge table already exists from supabase-schema.sql
+-- Just ensure the index exists
+CREATE INDEX IF NOT EXISTS idx_legal_knowledge_embedding
+ON legal_knowledge USING ivfflat (embedding vector_cosine_ops)
 WITH (lists = 100);
 
--- Create index for category filtering
-CREATE INDEX IF NOT EXISTS legal_documents_category_idx
-ON legal_documents(category);
-
--- Create index for document type filtering
-CREATE INDEX IF NOT EXISTS legal_documents_type_idx
-ON legal_documents(document_type);
-
--- Create function for similarity search
-CREATE OR REPLACE FUNCTION match_legal_documents(
+-- Create function for similarity search (using legal_knowledge table)
+CREATE OR REPLACE FUNCTION match_legal_knowledge(
   query_embedding vector(1536),
   match_threshold float DEFAULT 0.7,
   match_count int DEFAULT 5,
@@ -37,11 +16,10 @@ CREATE OR REPLACE FUNCTION match_legal_documents(
 )
 RETURNS TABLE (
   id uuid,
-  title text,
+  title varchar,
   content text,
-  source_url text,
-  document_type text,
-  category text,
+  source varchar,
+  category varchar,
   similarity float
 )
 LANGUAGE plpgsql
@@ -49,24 +27,23 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT
-    legal_documents.id,
-    legal_documents.title,
-    legal_documents.content,
-    legal_documents.source_url,
-    legal_documents.document_type,
-    legal_documents.category,
-    1 - (legal_documents.embedding <=> query_embedding) as similarity
-  FROM legal_documents
+    legal_knowledge.id,
+    legal_knowledge.title,
+    legal_knowledge.content,
+    legal_knowledge.source,
+    legal_knowledge.category,
+    1 - (legal_knowledge.embedding <=> query_embedding) as similarity
+  FROM legal_knowledge
   WHERE
-    (filter_category IS NULL OR legal_documents.category = filter_category)
-    AND 1 - (legal_documents.embedding <=> query_embedding) > match_threshold
-  ORDER BY legal_documents.embedding <=> query_embedding
+    (filter_category IS NULL OR legal_knowledge.category = filter_category)
+    AND 1 - (legal_knowledge.embedding <=> query_embedding) > match_threshold
+  ORDER BY legal_knowledge.embedding <=> query_embedding
   LIMIT match_count;
 END;
 $$;
 
--- Create sample legal documents (Korean labor law basics)
-INSERT INTO legal_documents (title, content, source_url, document_type, category) VALUES
+-- Create sample legal knowledge (Korean labor law basics)
+INSERT INTO legal_knowledge (title, content, source, category) VALUES
 (
   '근로기준법 제17조 - 근로계약서 명시사항',
   '근로계약을 체결할 때에는 다음 사항을 명시하여야 합니다:
@@ -77,7 +54,6 @@ INSERT INTO legal_documents (title, content, source_url, document_type, category
 5. 근로일 및 근로일별 근로시간
 사용자는 이를 서면으로 작성하여 근로자에게 교부하여야 합니다.',
   'https://www.law.go.kr/법령/근로기준법',
-  'law',
   'labor'
 ),
 (
