@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { searchDocuments, formatDocumentsForPrompt } from '@/lib/legal-knowledge-base'
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -63,10 +64,14 @@ export async function POST(request: Request) {
         }))
       : []
 
-    // Add current message
+    // Search for relevant legal documents (RAG)
+    const relevantDocs = searchDocuments(message, undefined, 3)
+    const contextWithRAG = formatDocumentsForPrompt(relevantDocs)
+
+    // Add current message with RAG context
     conversationHistory.push({
       role: 'user',
-      content: message,
+      content: message + contextWithRAG,
     })
 
     // Call Claude API
@@ -87,15 +92,26 @@ export async function POST(request: Request) {
     const responseText = content.text
     const sources: { title: string; url: string }[] = []
 
-    // Simple pattern matching for citations
+    // Add RAG documents as sources
+    relevantDocs.forEach((doc) => {
+      sources.push({
+        title: doc.title,
+        url: doc.sourceUrl,
+      })
+    })
+
+    // Simple pattern matching for citations in response
     // Format: [제목](URL)
     const citationRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g
-    let match
+    let match: RegExpExecArray | null
     while ((match = citationRegex.exec(responseText)) !== null) {
-      sources.push({
-        title: match[1],
-        url: match[2],
-      })
+      // Only add if not already in sources
+      if (!sources.find((s) => s.url === match![2])) {
+        sources.push({
+          title: match[1],
+          url: match[2],
+        })
+      }
     }
 
     // Remove markdown links from response

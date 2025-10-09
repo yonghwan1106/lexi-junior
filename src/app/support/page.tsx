@@ -27,16 +27,20 @@ const LEGAL_CENTERS: LegalCenter[] = [
     website: 'https://www.moel.go.kr',
     description:
       '근로기준, 임금체불, 부당해고, 4대보험 등 노동 관련 모든 상담 가능. 무료 전화 상담 제공.',
+    latitude: 37.5665,
+    longitude: 126.9780,
   },
   {
     id: '2',
-    name: '대한법률구조공단',
+    name: '대한법률구조공단 서울중앙지부',
     category: 'legal',
     phone: '132',
-    address: '전국 각 지부',
+    address: '서울 서초구 법원로3길 23',
     website: 'https://www.klac.or.kr',
     description:
       '경제적으로 어려운 국민을 위한 무료 법률 상담 및 소송 지원. 민사, 가사, 형사, 행정 사건 지원.',
+    latitude: 37.4959,
+    longitude: 127.0125,
   },
   {
     id: '3',
@@ -47,33 +51,41 @@ const LEGAL_CENTERS: LegalCenter[] = [
     website: 'https://www.kocla.or.kr',
     description:
       '노무 관련 전문 상담 및 노무사 연결 서비스. 근로계약, 4대보험, 산재 처리 등 전문 상담 가능.',
+    latitude: 37.5048,
+    longitude: 127.0458,
   },
   {
     id: '4',
-    name: '서울시 청년공간 무중력지대',
+    name: '서울시 청년공간 무중력지대 G밸리',
     category: 'legal',
     phone: '02-2133-7973',
-    address: '서울시 각 구',
+    address: '서울 금천구 가산디지털1로 168',
     website: 'https://youthzone.kr',
     description: '청년을 위한 무료 법률 상담, 노무 상담, 창업 컨설팅 제공.',
+    latitude: 37.4812,
+    longitude: 126.8822,
   },
   {
     id: '5',
     name: '전국세입자협회',
     category: 'tenant',
     phone: '1661-8071',
-    address: '전국',
+    address: '서울 마포구 월드컵북로 396',
     website: 'https://tenants.or.kr',
     description: '전세, 월세 임대차 계약 관련 상담 및 분쟁 조정 지원.',
+    latitude: 37.5665,
+    longitude: 126.9017,
   },
   {
     id: '6',
     name: '한국소비자원',
     category: 'consumer',
     phone: '1372',
-    address: '전국',
+    address: '충북 음성군 맹동면 용두로 54',
     website: 'https://www.kca.go.kr',
     description: '소비자 피해 구제, 계약 분쟁, 환불 관련 상담 및 중재 서비스 제공.',
+    latitude: 36.9446,
+    longitude: 127.5783,
   },
   {
     id: '7',
@@ -83,6 +95,8 @@ const LEGAL_CENTERS: LegalCenter[] = [
     address: '서울특별시 중구 세종대로 110',
     website: 'https://labor.seoul.go.kr',
     description: '서울시 거주 또는 근무자 대상 노동 상담, 체불 임금 해결 지원.',
+    latitude: 37.5662,
+    longitude: 126.9779,
   },
   {
     id: '8',
@@ -92,11 +106,14 @@ const LEGAL_CENTERS: LegalCenter[] = [
     address: '서울특별시 서초구 서초대로 1605',
     website: 'https://klaf.or.kr',
     description: '무료 법률 상담 및 소송 지원. 민사, 형사, 가사 사건 등 다양한 분야 지원.',
+    latitude: 37.4928,
+    longitude: 127.0124,
   },
 ]
 
 export default function SupportPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [mapLoaded, setMapLoaded] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -111,6 +128,69 @@ export default function SupportPage() {
     }
     checkAuth()
   }, [router, supabase])
+
+  useEffect(() => {
+    // Load Kakao Map SDK
+    const script = document.createElement('script')
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&autoload=false`
+    script.async = true
+    script.onload = () => {
+      window.kakao.maps.load(() => {
+        setMapLoaded(true)
+      })
+    }
+    document.head.appendChild(script)
+
+    return () => {
+      document.head.removeChild(script)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mapLoaded) return
+
+    const container = document.getElementById('map')
+    if (!container) return
+
+    const options = {
+      center: new window.kakao.maps.LatLng(37.5665, 126.9780), // Seoul City Hall
+      level: 8,
+    }
+
+    const map = new window.kakao.maps.Map(container, options)
+
+    // Add markers for filtered centers
+    filteredCenters.forEach((center) => {
+      if (center.latitude && center.longitude) {
+        const markerPosition = new window.kakao.maps.LatLng(
+          center.latitude,
+          center.longitude
+        )
+
+        const marker = new window.kakao.maps.Marker({
+          position: markerPosition,
+          map: map,
+        })
+
+        // Add info window
+        const iwContent = `
+          <div style="padding:10px;min-width:200px;">
+            <strong>${center.name}</strong><br/>
+            <span style="font-size:12px;">${center.address}</span><br/>
+            <span style="font-size:12px;">📞 ${center.phone}</span>
+          </div>
+        `
+
+        const infowindow = new window.kakao.maps.InfoWindow({
+          content: iwContent,
+        })
+
+        window.kakao.maps.event.addListener(marker, 'click', () => {
+          infowindow.open(map, marker)
+        })
+      }
+    })
+  }, [mapLoaded, selectedCategory])
 
   const categories = [
     { id: 'all', label: '전체', icon: '🏛️' },
@@ -165,6 +245,21 @@ export default function SupportPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Kakao Map */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">📍 지도에서 찾기</h3>
+          <div
+            id="map"
+            className="w-full h-96 rounded-lg"
+            style={{ minHeight: '400px' }}
+          />
+          {!mapLoaded && (
+            <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+              <p className="text-gray-500">지도를 불러오는 중...</p>
+            </div>
+          )}
         </div>
 
         {/* Legal Centers List */}
