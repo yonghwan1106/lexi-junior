@@ -44,11 +44,23 @@ export default function ProfilePage() {
       }
 
       // Load profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
+
+      if (profileError) {
+        // Check if table doesn't exist
+        if (profileError.message?.includes('relation') || profileError.message?.includes('does not exist')) {
+          setMessage({
+            type: 'error',
+            text: '데이터베이스 설정이 필요합니다. DATABASE_SETUP.md 파일을 참조하여 데이터베이스를 설정해주세요.',
+          })
+          setLoading(false)
+          return
+        }
+      }
 
       if (profileData) {
         setProfile(profileData)
@@ -70,6 +82,8 @@ export default function ProfilePage() {
 
         if (!error && data) {
           setProfile(data)
+        } else {
+          console.error('Error creating profile:', error)
         }
       }
 
@@ -84,6 +98,10 @@ export default function ProfilePage() {
       setSubscription(subData)
     } catch (error) {
       console.error('Error loading profile:', error)
+      setMessage({
+        type: 'error',
+        text: '프로필을 불러오는 중 오류가 발생했습니다.',
+      })
     } finally {
       setLoading(false)
     }
@@ -149,6 +167,60 @@ export default function ProfilePage() {
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">마이페이지</h1>
+
+        {/* Global error message */}
+        {message && !profile && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-yellow-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>데이터베이스 설정 필요</strong>
+                </p>
+                <p className="text-sm text-yellow-700 mt-2">
+                  프로필 기능을 사용하려면 Supabase 데이터베이스에 테이블을 생성해야 합니다.
+                </p>
+                <p className="text-sm text-yellow-700 mt-2">
+                  다음 단계를 따라주세요:
+                </p>
+                <ol className="list-decimal list-inside text-sm text-yellow-700 mt-2 space-y-1">
+                  <li>
+                    Supabase 대시보드에 접속:{' '}
+                    <a
+                      href="https://supabase.com/dashboard/project/hzmeplltczukavqhtxvx"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline font-medium"
+                    >
+                      여기를 클릭
+                    </a>
+                  </li>
+                  <li>좌측 메뉴에서 &ldquo;SQL Editor&rdquo; 클릭</li>
+                  <li>&ldquo;New Query&rdquo; 클릭</li>
+                  <li>
+                    프로젝트의 <code className="bg-yellow-100 px-1 rounded">supabase/migrations/20250609000000_initial_schema.sql</code> 파일 내용을 복사하여 붙여넣기
+                  </li>
+                  <li>&ldquo;Run&rdquo; 버튼을 클릭하여 실행</li>
+                </ol>
+                <p className="text-sm text-yellow-700 mt-2">
+                  자세한 내용은 프로젝트 루트의 <code className="bg-yellow-100 px-1 rounded">DATABASE_SETUP.md</code> 파일을 참조하세요.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Profile Information */}
