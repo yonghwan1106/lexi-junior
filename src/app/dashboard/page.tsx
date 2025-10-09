@@ -163,7 +163,15 @@ export default async function DashboardPage() {
 
         {/* Recent Contracts */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">최근 검토 내역</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-gray-900">최근 검토 내역</h3>
+            <Link
+              href="/contracts"
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              전체 보기 →
+            </Link>
+          </div>
           {contracts && contracts.length > 0 ? (
             <div className="space-y-4">
               {contracts.map((contract) => (

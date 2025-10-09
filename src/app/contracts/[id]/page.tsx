@@ -24,6 +24,8 @@ export default function ContractDetailPage({
   const [contract, setContract] = useState<Contract | null>(null)
   const [loading, setLoading] = useState(true)
   const [retrying, setRetrying] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareLink, setShareLink] = useState('')
   const router = useRouter()
   const supabase = createClient()
 
@@ -97,6 +99,106 @@ export default function ContractDetailPage({
     } finally {
       setRetrying(false)
     }
+  }
+
+  const downloadPDF = async () => {
+    if (!contract || !analysis) return
+
+    try {
+      const { jsPDF } = await import('jspdf')
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      })
+
+      // Set Korean font (using default font for now)
+      doc.setFont('helvetica')
+      doc.setFontSize(20)
+
+      // Title
+      doc.text('렉시주니어 계약서 분석 결과', 20, 20)
+
+      // Contract Info
+      doc.setFontSize(12)
+      doc.text(`제목: ${contract.title || '제목 없음'}`, 20, 35)
+      doc.text(
+        `종류: ${
+          contract.contract_type === 'employment'
+            ? '근로계약서'
+            : contract.contract_type === 'lease'
+            ? '임대차계약서'
+            : contract.contract_type === 'freelance'
+            ? '용역계약서'
+            : '기타 계약서'
+        }`,
+        20,
+        42
+      )
+      doc.text(
+        `위험도: ${
+          contract.risk_level === 'safe'
+            ? '안전'
+            : contract.risk_level === 'caution'
+            ? '주의'
+            : contract.risk_level === 'danger'
+            ? '위험'
+            : '미분석'
+        }`,
+        20,
+        49
+      )
+
+      // Summary
+      doc.setFontSize(14)
+      doc.text('전체 요약', 20, 60)
+      doc.setFontSize(10)
+      const summaryLines = doc.splitTextToSize(analysis.summary, 170)
+      doc.text(summaryLines, 20, 68)
+
+      let yPos = 68 + summaryLines.length * 5 + 10
+
+      // Clauses
+      doc.setFontSize(14)
+      doc.text('조항별 분석', 20, yPos)
+      yPos += 10
+
+      doc.setFontSize(10)
+      analysis.clauses.forEach((clause, index) => {
+        if (yPos > 270) {
+          doc.addPage()
+          yPos = 20
+        }
+
+        doc.text(`[${index + 1}] ${clause.riskLevel === 'safe' ? '안전' : clause.riskLevel === 'caution' ? '주의' : '위험'}`, 20, yPos)
+        yPos += 6
+
+        const textLines = doc.splitTextToSize(clause.originalText, 170)
+        doc.text(textLines, 20, yPos)
+        yPos += textLines.length * 5 + 4
+
+        const explLines = doc.splitTextToSize(clause.explanation, 170)
+        doc.text(explLines, 20, yPos)
+        yPos += explLines.length * 5 + 8
+      })
+
+      // Save PDF
+      doc.save(`${contract.title || '계약서분석'}_${new Date().getTime()}.pdf`)
+    } catch (error) {
+      console.error('PDF generation error:', error)
+      alert('PDF 생성 중 오류가 발생했습니다.')
+    }
+  }
+
+  const handleShare = () => {
+    const link = `${window.location.origin}/contracts/${id}`
+    setShareLink(link)
+    setShowShareModal(true)
+  }
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareLink)
+    alert('링크가 클립보드에 복사되었습니다!')
   }
 
   if (loading) {
@@ -265,12 +367,24 @@ export default function ContractDetailPage({
             </div>
 
             {/* Actions */}
-            <div className="mt-8 flex gap-4">
+            <div className="mt-8 flex flex-wrap gap-4">
+              <button
+                onClick={downloadPDF}
+                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                📄 PDF 다운로드
+              </button>
               <button
                 onClick={() => window.print()}
                 className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
               >
-                PDF로 저장
+                🖨️ 인쇄하기
+              </button>
+              <button
+                onClick={handleShare}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              >
+                🔗 공유하기
               </button>
               <Link
                 href="/upload"
@@ -282,6 +396,38 @@ export default function ContractDetailPage({
           </>
         )}
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">링크 공유</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              아래 링크를 복사하여 다른 사람과 공유하세요
+            </p>
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
+              />
+              <button
+                onClick={copyToClipboard}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                복사
+              </button>
+            </div>
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
