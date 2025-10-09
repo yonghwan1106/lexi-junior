@@ -137,13 +137,14 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-3">
-          <button
+          {/* 카카오 로그인은 OAuth 설정 완료 후 활성화 예정 */}
+          {/* <button
             onClick={handleKakaoLogin}
             disabled={loading}
             className="w-full bg-yellow-400 text-gray-900 py-2 rounded-lg font-medium hover:bg-yellow-500 transition disabled:opacity-50"
           >
             카카오로 1초 만에 시작하기
-          </button>
+          </button> */}
           <button
             onClick={handleGoogleLogin}
             disabled={loading}

@@ -39,10 +39,17 @@ export default async function DashboardPage() {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-blue-600">
-            렉시주니어
+          <Link href="/dashboard" className="flex flex-col">
+            <span className="text-2xl font-bold text-blue-600">렉시주니어</span>
+            <span className="text-xs text-gray-500">2025 DMC 이노베이션 CAMP 출품작</span>
           </Link>
           <div className="flex items-center gap-4">
+            <Link
+              href="/profile"
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              마이페이지
+            </Link>
             <span className="text-sm text-gray-600">{user.email}</span>
             <form action={handleSignOut}>
               <button
