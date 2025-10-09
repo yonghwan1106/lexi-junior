@@ -6,7 +6,10 @@ export default function HomePage() {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <nav className="flex justify-between items-center mb-16">
-          <h1 className="text-2xl font-bold text-gray-900">렉시주니어</h1>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold text-gray-900">렉시주니어</h1>
+            <p className="text-sm text-gray-500 mt-1">2025 DMC 이노베이션 CAMP 출품작</p>
+          </div>
           <Link
             href="/login"
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
